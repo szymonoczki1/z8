@@ -6,7 +6,7 @@ const { createClient } = require('redis');
 const app = express();
 app.use(express.json());
 
-// polaczenie z PostgreSQL przez zmienne srodowiskowe
+// polaczenie z pgsql przez zmienne srodowiskowe, orbimy connection pool
 const pool = new Pool({
     host: process.env.POSTGRES_HOST || 'db',
     database: process.env.POSTGRES_DB,
@@ -14,7 +14,7 @@ const pool = new Pool({
     password: process.env.POSTGRES_PASSWORD,
 });
 
-// polaczenie z Redis - redis v4 wymaga jawnego connect()
+// laczymy z redisem
 const redis = createClient({
     socket: { host: process.env.REDIS_HOST || 'cache', port: 6379 }
 });
@@ -45,7 +45,7 @@ app.get('/items', async (_req, res) => {
             cacheHits++;
             return res.json(JSON.parse(cached));
         }
-        // chybienie cache - pobierz z bazy i zapisz w cache
+        // miss cache - pobierz z bazy i zapisz w cache
         const { rows } = await pool.query('SELECT * FROM products ORDER BY id');
         await redis.set(ITEMS_KEY, JSON.stringify(rows), { EX: CACHE_TTL });
         res.json(rows);

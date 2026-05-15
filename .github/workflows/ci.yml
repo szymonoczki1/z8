@@ -17,7 +17,7 @@ env:
 
 jobs:
 
-  # ── Job 1: Lint (via reusable workflow) ──────────────────────────────────
+  # job 1: lint with setup-node reusable workflow
   lint:
     name: Lint
     uses: ./.github/workflows/setup-node.yml
@@ -25,7 +25,7 @@ jobs:
       node-version: '20'
       script: lint
 
-  # ── Job 2: Test matrix (via reusable workflow) ────────────────────────────
+  # job 2: test with matrix strategy and setup-node reusable workflow
   test:
     name: Tests (Node ${{ matrix.node-version }})
     needs: lint
@@ -37,7 +37,7 @@ jobs:
       node-version: ${{ matrix.node-version }}
       script: test
 
-  # ── Job 3: Integration tests (PostgreSQL service container) ───────────────
+  # job 3: integration tests (postgresql service container)
   test-integration:
     name: Integration Tests
     needs: lint
@@ -105,7 +105,7 @@ jobs:
           echo "| Database  | PostgreSQL 16            |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u)               |" >> $GITHUB_STEP_SUMMARY
 
-  # ── Job 4: Docker build + push to GHCR ───────────────────────────────────
+  # job 4: build an image and push it to ghcr
   build-and-push:
     name: Build and Push Docker Image
     needs: [test, test-integration]

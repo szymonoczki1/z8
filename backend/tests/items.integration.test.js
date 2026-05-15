@@ -4,6 +4,9 @@ const { test, before, beforeEach, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { Pool } = require('pg');
 
+// robimy sobie polaczenie do prawdziwej bazy pgsql ktora jest zrobiona przez job github
+// na obrazie pg 16 alpine, bierzemy env z processu node ktore on bierze z ci yml test:integration
+
 const pool = new Pool({
     host:     process.env.PGHOST     || 'localhost',
     user:     process.env.PGUSER     || 'testuser',
@@ -11,6 +14,8 @@ const pool = new Pool({
     database: process.env.PGDATABASE || 'testdb',
     port:     parseInt(process.env.PGPORT || '5432', 10),
 });
+
+// tworzymy table przed testami
 
 before(async () => {
     await pool.query(`
@@ -22,6 +27,8 @@ before(async () => {
     `);
 });
 
+// before each czyscimy tabele i restartujemy auto id na 1
+
 beforeEach(async () => {
     await pool.query('TRUNCATE TABLE products RESTART IDENTITY');
 });
@@ -29,6 +36,8 @@ beforeEach(async () => {
 after(async () => {
     await pool.end();
 });
+
+// TESTY
 
 test('INSERT then SELECT returns the inserted row', async () => {
     await pool.query(

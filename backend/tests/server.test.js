@@ -4,9 +4,9 @@ const { describe, test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
 
-// ---------------------------------------------------------------------------
-// In-memory fakes — injected before server.js loads so pg/redis never connect
-// ---------------------------------------------------------------------------
+// robimy fake db i redis i wrzucamy je do cacha node przed zaladowaniem server.js
+// dzieki temu jak node bedzie probowal zaladowac pg i redis z node modules to najpierw
+// sprawdzi cache gdzie beda nasze fake implementacje i je uzyje
 
 const db = {
     rows: [],
@@ -40,12 +40,11 @@ function injectMock(moduleName, exports) {
 injectMock('pg',    { Pool: function () { return db; } });
 injectMock('redis', { createClient: () => redisStore });
 
-// require.main !== module inside server.js → startup block is skipped
+// require.main !== module inside server.js --> startup block skipped
 const { app, _resetForTesting } = require('../server');
 
-// ---------------------------------------------------------------------------
-// One-shot HTTP helper — random port, tears down after each call
-// ---------------------------------------------------------------------------
+// przypisujemy kazdym wywolaniu metody request nowy port zeby testy nie mialy
+// konfliktu portow i w tym samym momencie testujemy faktyczne zachowanie http
 
 function request(method, path, body) {
     return new Promise((resolve, reject) => {
@@ -79,15 +78,15 @@ function request(method, path, body) {
     });
 }
 
+// przed kazdym testem resetujemy stan fake db i redis oraz licznik cacheHits (server.js)
+
 beforeEach(() => {
     db.rows          = [];
     redisStore.store = {};
     _resetForTesting();
 });
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+// i w koncu robimy faktyczne testy wysylajac zapytania http do naszego expressa i sprawdzajac odpowiedzi
 
 describe('GET /health', () => {
     test('returns status ok', async () => {
@@ -98,24 +97,24 @@ describe('GET /health', () => {
 });
 
 describe('POST /items — validation', () => {
-    test('rejects missing name → 400', async () => {
+    test('rejects missing name -> 400', async () => {
         const res = await request('POST', '/items', { price: 9.99 });
         assert.equal(res.status, 400);
     });
 
-    test('rejects missing price → 400', async () => {
+    test('rejects missing price -> 400', async () => {
         const res = await request('POST', '/items', { name: 'Widget' });
         assert.equal(res.status, 400);
     });
 
-    test('accepts valid product → 201 with inserted row', async () => {
+    test('accepts valid product -> 201 with inserted row', async () => {
         const res = await request('POST', '/items', { name: 'Widget', price: 9.99 });
         assert.equal(res.status, 201);
         assert.equal(res.body.name, 'Widget');
         assert.equal(res.body.price, 9.99);
     });
 
-    test('accepts string price → parses to float', async () => {
+    test('accepts string price -> parses to float', async () => {
         const res = await request('POST', '/items', { name: 'Gadget', price: '24.99' });
         assert.equal(res.status, 201);
         assert.equal(res.body.price, 24.99);
@@ -123,7 +122,7 @@ describe('POST /items — validation', () => {
 });
 
 describe('GET /items — cache logic', () => {
-    test('cache miss → returns rows from db and populates Redis', async () => {
+    test('cache miss -> returns rows from db and populates Redis', async () => {
         db.rows = [{ id: 1, name: 'Widget', price: 9.99 }];
 
         const res = await request('GET', '/items');
@@ -133,7 +132,7 @@ describe('GET /items — cache logic', () => {
         assert.ok(redisStore.store['items'], 'Redis should be populated after miss');
     });
 
-    test('cache hit → returns Redis data without touching db', async () => {
+    test('cache hit -> returns Redis data without touching db', async () => {
         const cached = [{ id: 99, name: 'From cache', price: 1 }];
         redisStore.store['items'] = JSON.stringify(cached);
         db.rows = [];
@@ -144,7 +143,7 @@ describe('GET /items — cache logic', () => {
         assert.deepEqual(res.body, cached);
     });
 
-    test('cache hit → increments cacheHits counter', async () => {
+    test('cache hit -> increments cacheHits counter', async () => {
         redisStore.store['items'] = JSON.stringify([{ id: 1, name: 'X', price: 1 }]);
 
         await request('GET', '/items'); // hit 1
@@ -178,7 +177,7 @@ describe('GET /stats', () => {
         assert.equal(res.body.totalProducts, 2);
     });
 
-    test('empty db → totalProducts is 0', async () => {
+    test('empty db -> totalProducts is 0', async () => {
         const res = await request('GET', '/stats');
         assert.equal(res.body.totalProducts, 0);
     });
