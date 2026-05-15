@@ -160,7 +160,7 @@ jobs:
           echo "| Item      | Value                          |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------------------------------|" >> $GITHUB_STEP_SUMMARY
           echo "| Registry  | ghcr.io                        |" >> $GITHUB_STEP_SUMMARY
-          echo "| Image     | ${{ github.repository_owner }}/product-api |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image     | ${{ github.repository_owner }}/z8-product-api |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u)                     |" >> $GITHUB_STEP_SUMMARY
 
       - name: Write build summary
@@ -172,7 +172,7 @@ jobs:
           echo "|-----------|----------------------------------------------|" >> $GITHUB_STEP_SUMMARY
           echo "| Platforms | linux/amd64, linux/arm64                     |" >> $GITHUB_STEP_SUMMARY
           echo "| Registry  | ghcr.io                                      |" >> $GITHUB_STEP_SUMMARY
-          echo "| Image     | ${{ github.repository_owner }}/product-api   |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image     | ${{ github.repository_owner }}/z8-product-api   |" >> $GITHUB_STEP_SUMMARY
           echo "| Tags      | ${{ steps.meta.outputs.tags }}               |" >> $GITHUB_STEP_SUMMARY
           echo "| Status    | ${{ job.status }}                            |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u)                                   |" >> $GITHUB_STEP_SUMMARY
